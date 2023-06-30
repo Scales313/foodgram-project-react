@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from PIL import Image
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 User = get_user_model()
 
@@ -9,7 +11,7 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField('Единицы измерения', max_length=255)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} {self.measurement_unit}"
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -31,22 +33,31 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
+    title = models.CharField(
+        verbose_name="Название рецепта",
+        max_length=255
+    )
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='recipes',
-        verbose_name='Автор рецепта'
+        verbose_name='Автор рецепта',
+        null=True
     )
-    title = models.CharField(max_length=255)
-    image = models.ImageField(upload_to='recipes/')
-    description = models.TextField()
+    tags = models.ManyToManyField(Tag, verbose_name='Теги')
+    image = models.ImageField(
+        verbose_name="Изображение блюда",
+        upload_to="recipe_images/",
+    )
+    description = models.TextField(
+        verbose_name="Описание блюда",
+        max_length=10000)
     ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
         verbose_name='Ингредиенты',
         related_name='recipes'
     )
-    tags = models.ManyToManyField(Tag, verbose_name='Теги')
     cooking_time = models.PositiveIntegerField(
         verbose_name='Время приготовления'
     )
@@ -58,21 +69,41 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.image:
+            img = Image.open(self.image.path)
+            img.thumbnail((300, 300))
+            img.save(self.image.path)
+
 
 class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    quantity = models.DecimalField(max_digits=6, decimal_places=2)
 
-    def __str__(self):
-        return (
-            f'{self.ingredient.name} - {self.quantity}'
-            f' {self.ingredient.measurement_unit}'
-        )
+    recipe = models.ForeignKey(
+        Recipe,
+        verbose_name="В каких рецептах",
+        related_name="ingredient",
+        on_delete=models.CASCADE
+    )
+    ingredients = models.ForeignKey(
+        Ingredient,
+        verbose_name="Связанные ингредиенты",
+        related_name="recipe",
+        on_delete=models.CASCADE
+    )
+    quantity = models.PositiveSmallIntegerField(
+        verbose_name="Количество",
+        default=0,
+        validators=[
+            MinValueValidator(0, "Может тогда уберешь это из рецепта?)"),
+            MaxValueValidator(100, "Просто съешь это отдельно")
+        ]
+    )
 
     class Meta:
-        verbose_name = 'Ингредиент рецепта'
-        verbose_name_plural = 'Ингредиенты рецепта'
+        verbose_name = "Ингредиент рецепта"
+        verbose_name_plural = "Ингредиенты рецепта"
 
 
 class ShoppingList(models.Model):
@@ -107,7 +138,7 @@ class Favorite(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         related_name='favorites',
-        verbose_name='Рецепт'
+        verbose_name='Понравившиеся'
     )
 
     class Meta:

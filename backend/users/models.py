@@ -1,4 +1,9 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import (
+    EmailValidator,
+    MinLengthValidator,
+    RegexValidator
+)
 from django.db import models
 
 
@@ -9,11 +14,70 @@ class User(AbstractUser):
         ('admin', 'Администратор')
     ]
 
-    username = models.CharField('Логин', max_length=150, unique=True)
-    password = models.CharField('Пароль', max_length=128)
-    email = models.EmailField('Email', max_length=254, unique=True)
-    first_name = models.CharField('Имя', max_length=150)
-    last_name = models.CharField('Фамилия', max_length=150)
+    email = models.EmailField(
+        'Email',
+        max_length=254,
+        unique=True,
+        validators=[EmailValidator(message='Введите корректный адрес email.')]
+    )
+    username = models.CharField(
+        'Логин',
+        max_length=150,
+        unique=True,
+        validators=[
+            RegexValidator(
+                r'^[a-zA-Z0-9_]+$',
+                message=(
+                    'Логин может содержать только латинские буквы, ',
+                    'цифры и символ подчеркивания.'
+                )
+            ),
+            MinLengthValidator(
+                5,
+                message='Логин должен содержать не менее 5 символов.'
+            )
+        ]
+    )
+    password = models.CharField(
+        'Пароль',
+        max_length=128,
+        validators=[
+            MinLengthValidator(
+                8,
+                message='Пароль должен содержать не менее 8 символов.'
+            )
+        ]
+    )
+    first_name = models.CharField(
+        'Имя',
+        max_length=150,
+        validators=[
+            RegexValidator(
+                r'^[A-Za-zА-Яа-яЁё\s-]+$',
+                message='Имя может содержать только буквы, пробелы и дефисы.'
+            ),
+            MinLengthValidator(
+                2,
+                message='Имя должно содержать не менее 2 символов.'
+            )
+        ]
+    )
+    last_name = models.CharField(
+        'Фамилия',
+        max_length=150,
+        validators=[
+            RegexValidator(
+                r'^[A-Za-zА-Яа-яЁё\s-]+$',
+                message=(
+                    'Фамилия может содержать только буквы, пробелы и дефисы.'
+                )
+            ),
+            MinLengthValidator(
+                2,
+                message='Фамилия должна содержать не менее 2 символов.'
+            )
+        ]
+    )
     role = models.CharField('Уровень доступа', max_length=20, choices=ROLES)
 
     USERNAME_FIELD = 'username'

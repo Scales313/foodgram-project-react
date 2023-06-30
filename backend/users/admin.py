@@ -4,8 +4,16 @@ from .models import User, Follow
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name')
-    list_filter = ('email', 'first_name')
+    list_display = (
+        'username',
+        'email',
+        'first_name',
+        'last_name',
+        'is_active'
+    )
+    list_filter = ('is_active', 'first_name', 'email')
+    search_fields = ('username', 'email')
+    save_on_top = True
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('email', 'first_name', 'last_name')}),

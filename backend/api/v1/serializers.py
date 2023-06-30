@@ -1,12 +1,80 @@
+from django.core.validators import RegexValidator
 from rest_framework import serializers
-from .models import (
+
+from recipes.models import (
+    Favorite,
     Ingredient,
-    Tag,
     Recipe,
     RecipeIngredient,
     ShoppingList,
-    Favorite
- )
+    Tag,
+)
+from users.models import User, Follow
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = ('user', 'author')
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    following = serializers.SerializerMethodField()
+    followers = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'username', 'password', 'email',
+            'first_name', 'last_name', 'role',
+            'following', 'followers'
+        )
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user
+
+    def get_following(self, obj):
+        return FollowSerializer(obj.following.all(), many=True).data
+
+    def get_followers(self, obj):
+        return FollowSerializer(obj.followers.all(), many=True).data
+
+
+class GetCodeSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        required=True,
+        max_length=150,
+        validators=[
+            RegexValidator(
+                regex='^((?!me).)[a-zA-Z0-9+_@.-]*$',
+                message='Использованы недопустимые символы',
+                code='invalid_username'
+            ),
+        ],
+    )
+    email = serializers.EmailField(
+        required=True,
+        max_length=150,
+    )
+
+
+class GetTokenSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        required=True,
+        max_length=150,
+        validators=[
+            RegexValidator(
+                regex='^[a-zA-Z0-9+_@.-]*$',
+                message='Использованы недопустимые символы',
+                code='invalid_username'
+            ),
+        ],
+    )
+    confirmation_code = serializers.CharField(required=True)
 
 
 class IngredientSerializer(serializers.ModelSerializer):
