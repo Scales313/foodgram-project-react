@@ -97,10 +97,15 @@ class RecipeSerializer(serializers.ModelSerializer):
     image = Base64ImageField(read_only=True)
     name = serializers.ReadOnlyField()
     cooking_time = serializers.ReadOnlyField()
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Tag.objects.all(),
+        allow_empty=False
+    )
 
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
+        fields = ('id', 'name', 'image', 'cooking_time', 'tags')
 
 
 class FollowsSerializer(serializers.ModelSerializer):
@@ -202,7 +207,8 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
 class RecipeCreateSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=Tag.objects.all()
+        queryset=Tag.objects.all(),
+        allow_empty=False
     )
     author = UserSerializer(read_only=True)
     id = serializers.ReadOnlyField()
@@ -235,14 +241,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
         if not obj.get('ingredients'):
             raise serializers.ValidationError(
-                'Нужно указать минимум 1 ингредиент.'
+                'Минимум 1 ингредиент.'
             )
 
         ingredient_ids = [item['id'] for item in obj.get('ingredients')]
         unique_ingredient_ids = set(ingredient_ids)
         if len(ingredient_ids) != len(unique_ingredient_ids):
             raise serializers.ValidationError(
-                'Ингредиенты должны быть уникальны.'
+                'Ингредиенты не должны повторяться.'
             )
 
         return obj
