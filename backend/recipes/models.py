@@ -33,6 +33,11 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
+    name = models.CharField(
+        verbose_name='Название',
+        max_length=200,
+        default='Название рецепта'
+    )
     title = models.CharField(
         verbose_name="Название рецепта",
         max_length=255
@@ -49,7 +54,7 @@ class Recipe(models.Model):
         verbose_name="Изображение блюда",
         upload_to="recipe_images/",
     )
-    description = models.TextField(
+    text = models.TextField(
         verbose_name="Описание блюда",
         max_length=10000)
     ingredients = models.ManyToManyField(
@@ -83,14 +88,19 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         verbose_name="В каких рецептах",
-        related_name="ingredient",
+        related_name="recipe_ingredients",
         on_delete=models.CASCADE
     )
-    ingredients = models.ForeignKey(
+    ingredient = models.ForeignKey(
         Ingredient,
         verbose_name="Связанные ингредиенты",
-        related_name="recipe",
+        related_name="recipe_ingredients",
         on_delete=models.CASCADE
+    )
+    amount = models.IntegerField(
+        'Количество',
+        validators=[MinValueValidator(1)],
+        default=1
     )
     quantity = models.PositiveSmallIntegerField(
         verbose_name="Количество",
@@ -110,12 +120,12 @@ class ShoppingList(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shopping_lists',
+        related_name='shopping_cart',
         verbose_name='Пользователь'
     )
     recipes = models.ManyToManyField(
         Recipe,
-        related_name='shopping_lists',
+        related_name='shopping_cart',
         verbose_name='Рецепты'
     )
 

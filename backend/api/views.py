@@ -55,7 +55,7 @@ class UserViewSet(mixins.CreateModelMixin,
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,),
             pagination_class=CustomPagination)
-    def followinig(self, request):
+    def subscriptions(self, request):
         queryset = User.objects.filter(subscribing__user=request.user)
         page = self.paginate_queryset(queryset)
         serializer = FollowsSerializer(
@@ -67,7 +67,7 @@ class UserViewSet(mixins.CreateModelMixin,
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(AllowAny,))
-    def follow(self, request, **kwargs):
+    def subscribe(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs['pk'])
 
         if request.user.id == author.id:
@@ -114,15 +114,6 @@ class IngredientViewSet(mixins.ListModelMixin,
     filter_backends = (IngredientFilter, )
     search_fields = ('name', )
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data,
-                        status=status.HTTP_201_CREATED,
-                        headers=headers)
-
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
@@ -138,7 +129,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return RecipeCreateSerializer
 
     @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(AllowAny,))
+            permission_classes=(IsAuthenticated,))
     def favorite(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
 
@@ -157,7 +148,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'DELETE':
             get_object_or_404(Favorite, user=request.user,
                               recipe=recipe).delete()
-            return Response({'detail': 'Рецепт успешно удален из избранного.'},
+            return Response({'detail': 'Рецепт удален из избранного.'},
                             status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post', 'delete'],
@@ -189,11 +180,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
     @action(detail=False, methods=['get'],
-            permission_classes=(AllowAny,))
+            permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request, **kwargs):
         ingredients = (
             RecipeIngredient.objects
-            .filter(recipe__shopping_recipe__user=request.user)
+            .filter(recipe__shopping_cart__user=request.user)
             .values('ingredient')
             .annotate(total_amount=Sum('amount'))
             .values_list('ingredient__name', 'total_amount',

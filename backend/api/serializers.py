@@ -161,7 +161,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = UserReadSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     ingredients = RecipeIngredientSerializer(
         many=True,
@@ -191,7 +191,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return (
             self.context.get('request').user.is_authenticated
             and ShoppingList.objects.filter(
-                user=self.context['request'].user, recipe=obj
+                user=self.context['request'].user, recipes=obj
             ).exists()
         )
 
@@ -210,7 +210,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         allow_empty=False
     )
-    author = UserSerializer(read_only=True)
+    author = UserReadSerializer(read_only=True)
     id = serializers.ReadOnlyField()
     ingredients = RecipeIngredientCreateSerializer(many=True)
     image = Base64ImageField()
@@ -237,7 +237,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 )
 
         if not obj.get('tags'):
-            raise serializers.ValidationError('Нужно указать минимум 1 тег.')
+            raise serializers.ValidationError('Минимум 1 тег.')
 
         if not obj.get('ingredients'):
             raise serializers.ValidationError(
@@ -269,12 +269,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        tags = validated_data.get('tags')
-        ingredients = validated_data.get('ingredients')
-        recipe = Recipe.objects.create(
-            author=self.context['request'].user,
-            **validated_data
-        )
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(author=self.context['request'].user,
+                                       **validated_data)
         self.tags_and_ingredients_set(recipe, tags, ingredients)
         return recipe
 
@@ -284,17 +282,16 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
         instance.cooking_time = validated_data.get(
-            'cooking_time',
-            instance.cooking_time
-        )
-        tags = validated_data.get('tags')
-        ingredients = validated_data.get('ingredients')
+            'cooking_time', instance.cooking_time)
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
         RecipeIngredient.objects.filter(
-            recipe=instance, ingredient__in=instance.ingredients.all()
-        ).delete()
+            recipe=instance,
+            ingredient__in=instance.ingredients.all()).delete()
         self.tags_and_ingredients_set(instance, tags, ingredients)
         instance.save()
         return instance
 
     def to_representation(self, instance):
-        return RecipeReadSerializer(instance, context=self.context).data
+        return RecipeReadSerializer(instance,
+                                    context=self.context).data
