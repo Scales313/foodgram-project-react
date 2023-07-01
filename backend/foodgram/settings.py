@@ -18,7 +18,7 @@ DATE_TIME_FORMAT = "%d/%m/%Y %H:%M"
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-vr*#dbf7c%@pxv@z=yk&+6!a_u-6cy+k0j4u@ku*n#sxzjx0q5')
+SECRET_KEY = os.getenv('SECRET_KEY', '')
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
