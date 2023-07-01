@@ -45,3 +45,4 @@ typing_extensions==4.7.0
 uritemplate==4.1.1
 urllib3==2.0.3
 webcolors==1.11.1
+drf_base64

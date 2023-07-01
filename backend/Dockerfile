@@ -14,4 +14,4 @@ RUN mkdir -p /backend_static/static/
 
 COPY . .
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "kittygram_backend.wsgi"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "foodgram.wsgi"]
