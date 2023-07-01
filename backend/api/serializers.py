@@ -1,12 +1,13 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions as django_exceptions
-from djoser.serializers import UserSerializer, UserCreateSerializer
+from django.db import transaction
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_base64.fields import Base64ImageField
+from rest_framework import serializers
+
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingList, Tag)
-from rest_framework import serializers
 from users.models import Follow, User
-from django.db import transaction
 
 
 class UserReadSerializer(UserSerializer):
@@ -69,8 +70,8 @@ class SetPasswordSerializer(serializers.Serializer):
                 {'current_password': 'Неверный пароль.'}
             )
         if (
-            validated_data['current_password'] ==
-            validated_data['new_password']
+            validated_data['current_password']
+            == validated_data['new_password']
         ):
             raise serializers.ValidationError(
                 {'new_password': 'Новый пароль должен отличаться от текущего.'}

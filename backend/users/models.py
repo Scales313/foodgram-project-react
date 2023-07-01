@@ -1,9 +1,6 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import (
-    EmailValidator,
-    MinLengthValidator,
-    RegexValidator
-)
+from django.core.validators import (EmailValidator, MinLengthValidator,
+                                    RegexValidator)
 from django.db import models
 
 

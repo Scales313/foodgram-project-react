@@ -2,23 +2,24 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from foodgram.settings import FILE_NAME
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingList, Tag)
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from foodgram.settings import FILE_NAME
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingList, Tag)
 from users.models import Follow, User
 
-from .filters import RecipeFilter, IngredientFilter
+from .filters import IngredientFilter, RecipeFilter
 from .paginations import CustomPagination
 from .permissions import IsAuthorOrReadOnly
-from .serializers import (UserCreateSerializer, UserReadSerializer,
-                          SetPasswordSerializer, RecipeSerializer,
-                          FollowsSerializer, FollowAuthorSerializer,
-                          IngredientSerializer, TagSerializer,
-                          RecipeReadSerializer, RecipeCreateSerializer)
+from .serializers import (FollowAuthorSerializer, FollowsSerializer,
+                          IngredientSerializer, RecipeCreateSerializer,
+                          RecipeReadSerializer, RecipeSerializer,
+                          SetPasswordSerializer, TagSerializer,
+                          UserCreateSerializer, UserReadSerializer)
 
 
 class UserViewSet(mixins.CreateModelMixin,
