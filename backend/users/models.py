@@ -4,13 +4,13 @@ from django.core.validators import (EmailValidator, MinLengthValidator,
 from django.db import models
 
 
-class User(AbstractUser):
-    ROLES = [
-        ('guest', 'Гость'),
-        ('user', 'Авторизованный пользователь'),
-        ('admin', 'Администратор')
-    ]
+class UserRole(models.TextChoices):
+    GUEST = 'guest', 'Гость'
+    USER = 'user', 'Авторизованный пользователь'
+    ADMIN = 'admin', 'Администратор'
 
+
+class User(AbstractUser):
     email = models.EmailField(
         'Email',
         max_length=254,
@@ -32,16 +32,6 @@ class User(AbstractUser):
             MinLengthValidator(
                 5,
                 message='Логин должен содержать не менее 5 символов.'
-            )
-        ]
-    )
-    password = models.CharField(
-        'Пароль',
-        max_length=128,
-        validators=[
-            MinLengthValidator(
-                8,
-                message='Пароль должен содержать не менее 8 символов.'
             )
         ]
     )
@@ -75,7 +65,11 @@ class User(AbstractUser):
             )
         ]
     )
-    role = models.CharField('Уровень доступа', max_length=20, choices=ROLES)
+    role = models.CharField(
+        'Уровень доступа',
+        max_length=20,
+        choices=UserRole.choices
+    )
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email', 'first_name', 'last_name']

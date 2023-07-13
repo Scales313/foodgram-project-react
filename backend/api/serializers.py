@@ -97,11 +97,6 @@ class RecipeSerializer(serializers.ModelSerializer):
     image = Base64ImageField(read_only=True)
     name = serializers.ReadOnlyField()
     cooking_time = serializers.ReadOnlyField()
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=Tag.objects.all(),
-        allow_empty=False
-    )
 
     class Meta:
         model = Recipe
@@ -151,13 +146,13 @@ class FollowAuthorSerializer(FollowsSerializer):
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = '__all__'
+        fields = ['id', 'name', 'measurement_unit']
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = '__all__'
+        fields = ['id', 'name', 'color', 'slug']
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
@@ -191,9 +186,9 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return (
             self.context.get('request').user.is_authenticated
             and ShoppingList.objects.filter(
-                user=self.context['request'].user, recipes=obj
-            ).exists()
-        )
+                user=self.context['request'].user,
+                recipe=obj).exists()
+            )
 
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
@@ -208,7 +203,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Tag.objects.all(),
-        allow_empty=False
     )
     author = UserReadSerializer(read_only=True)
     id = serializers.ReadOnlyField()
@@ -278,19 +272,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        instance.image = validated_data.get('image', instance.image)
-        instance.name = validated_data.get('name', instance.name)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get(
-            'cooking_time', instance.cooking_time)
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        RecipeIngredient.objects.filter(
-            recipe=instance,
-            ingredient__in=instance.ingredients.all()).delete()
+        tags = validated_data.pop('tags', [])
+        ingredients = validated_data.pop('ingredients', [])
+        instance.tags.clear()
+        RecipeIngredient.objects.filter(recipe=instance).delete()
         self.tags_and_ingredients_set(instance, tags, ingredients)
-        instance.save()
-        return instance
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         return RecipeReadSerializer(instance,

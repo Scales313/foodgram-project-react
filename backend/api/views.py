@@ -15,9 +15,8 @@ from users.models import Follow, User
 from .filters import IngredientFilter, RecipeFilter
 from .paginations import CustomPagination
 from .permissions import IsAuthorOrReadOnly
-from .serializers import (FollowAuthorSerializer, FollowsSerializer,
-                          IngredientSerializer, RecipeCreateSerializer,
-                          RecipeReadSerializer, RecipeSerializer,
+from .serializers import (FollowsSerializer, IngredientSerializer,
+                          RecipeCreateSerializer, RecipeReadSerializer,
                           SetPasswordSerializer, TagSerializer,
                           UserCreateSerializer, UserReadSerializer)
 
@@ -77,20 +76,17 @@ class UserViewSet(mixins.CreateModelMixin,
             )
 
         if request.method == 'POST':
-            serializer = FollowAuthorSerializer(
-                author, data=request.data, context={"request": request})
-            serializer.is_valid(raise_exception=True)
             Follow.objects.create(user=request.user, author=author)
-            return Response(serializer.data,
+            return Response({'detail': 'Вы подписались', 'author': author.id},
                             status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            follow_instance = get_object_or_404(
+            subscribe_instance = get_object_or_404(
                 Follow,
                 user=request.user,
                 author=author
             )
-            follow_instance.delete()
+            subscribe_instance.delete()
             return Response({'detail': 'Вы отписались', 'author': author.id},
                             status=status.HTTP_200_OK)
 
@@ -134,53 +130,48 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
 
         if request.method == 'POST':
-            serializer = RecipeSerializer(recipe, data=request.data,
-                                          context={"request": request})
-            serializer.is_valid(raise_exception=True)
             if not Favorite.objects.filter(user=request.user,
                                            recipe=recipe).exists():
                 Favorite.objects.create(user=request.user, recipe=recipe)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
-            return Response({'errors': 'Рецепт уже в избранном.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == 'DELETE':
-            get_object_or_404(Favorite, user=request.user,
-                              recipe=recipe).delete()
-            return Response({'detail': 'Рецепт удален из избранного.'},
-                            status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(AllowAny,),
-            pagination_class=None)
-    def shopping_cart(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-
-        if request.method == 'POST':
-            serializer = RecipeSerializer(recipe, data=request.data,
-                                          context={"request": request})
-            serializer.is_valid(raise_exception=True)
-            if not ShoppingList.objects.filter(
-                user=request.user,
-                recipe=recipe
-            ).exists():
-                ShoppingList.objects.create(user=request.user, recipe=recipe)
-                return Response(serializer.data,
+                return Response({'detail': 'Рецепт добавлен в избранное.'},
                                 status=status.HTTP_201_CREATED)
             return Response({'errors': 'Вы уже добавили этот рецепт.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == 'DELETE':
-            get_object_or_404(ShoppingList, user=request.user,
-                              recipe=recipe).delete()
-            return Response(
-                {'detail': 'Рецепт удален.'},
-                status=status.HTTP_204_NO_CONTENT
-            )
+            Favorite.objects.filter(user=request.user, recipe=recipe).delete()
+            return Response({'detail': 'Рецепт убран из избранного.'},
+                            status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=(IsAuthenticated,),
+            pagination_class=None)
+    def shopping_cart(self, request, **kwargs):
+        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
+
+        if request.method == 'POST':
+            if not ShoppingList.objects.filter(
+                user=request.user,
+                recipe=recipe
+            ).exists():
+                ShoppingList.objects.create(user=request.user, recipe=recipe)
+                return Response(
+                    {'detail': 'Рецепт добавлен в корзину покупок.'},
+                    status=status.HTTP_201_CREATED
+                                )
+            return Response({'errors': 'Вы уже добавили этот рецепт.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == 'DELETE':
+            ShoppingList.objects.filter(
+                user=request.user,
+                recipe=recipe
+            ).delete()
+            return Response({'detail': 'Рецепт удален из корзины покупок.'},
+                            status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'],
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(AllowAny,))
     def download_shopping_cart(self, request, **kwargs):
         ingredients = (
             RecipeIngredient.objects
@@ -194,6 +185,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         [file_list.append(
             '{} - {} {}.'.format(*ingredient)) for ingredient in ingredients]
         file = HttpResponse('Cписок покупок:\n' + '\n'.join(file_list),
-                            content_type='text/plain')
+                            content_type='description/plain')
         file['Content-Disposition'] = (f'attachment; filename={FILE_NAME}')
         return file

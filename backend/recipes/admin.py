@@ -24,13 +24,13 @@ class ShoppingListAdmin(admin.ModelAdmin):
 
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ("user", "recipe_title")
-    search_fields = ("user__username", "recipe__title")
+    list_display = ("user", "recipe_name")
+    search_fields = ("user__username", "recipe__name")
 
-    def recipe_title(self, obj):
-        return obj.recipe.title
+    def recipe_name(self, obj):
+        return obj.recipe.name
 
-    recipe_title.short_description = "Recipe Title"
+    recipe_name.short_description = "Recipe Name"
 
 
 @admin.register(User)
@@ -61,10 +61,10 @@ class CustomUserAdmin(BaseUserAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ['title', 'author']
+    list_display = ['name', 'author']
     list_filter = ['author', 'tags']
-    search_fields = ['title', 'author__username']
-    ordering = ['title']
+    search_fields = ['name', 'author__username']
+    ordering = ['name']
     readonly_fields = ['favorite_count']
     inlines = [IngredientInline]
 
