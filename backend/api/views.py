@@ -158,7 +158,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 return Response(
                     {'detail': 'Рецепт добавлен в корзину покупок.'},
                     status=status.HTTP_201_CREATED
-                                )
+                    )
             return Response({'errors': 'Вы уже добавили этот рецепт.'},
                             status=status.HTTP_400_BAD_REQUEST)
 

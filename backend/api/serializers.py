@@ -187,8 +187,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             self.context.get('request').user.is_authenticated
             and ShoppingList.objects.filter(
                 user=self.context['request'].user,
-                recipe=obj).exists()
-            )
+                recipe=obj).exists())
 
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
