@@ -4,7 +4,8 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
 from foodgram.settings import FILE_NAME
@@ -14,7 +15,6 @@ from users.models import Follow, User
 
 from .filters import IngredientFilter, RecipeFilter
 from .paginations import CustomPagination
-from .permissions import IsAuthorOrReadOnly
 from .serializers import (FollowsSerializer, IngredientSerializer,
                           RecipeCreateSerializer, RecipeReadSerializer,
                           SetPasswordSerializer, TagSerializer,
@@ -114,7 +114,7 @@ class IngredientViewSet(mixins.ListModelMixin,
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = CustomPagination
-    permission_classes = (IsAuthorOrReadOnly, )
+    permission_classes = (IsAuthenticatedOrReadOnly, )
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
     http_method_names = ['get', 'post', 'patch', 'create', 'delete']
