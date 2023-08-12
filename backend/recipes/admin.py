@@ -9,6 +9,7 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
 class IngredientInline(admin.TabularInline):
     model = Recipe.ingredients.through
     extra = 2
+    min_num = 1
 
 
 @admin.register(RecipeIngredient)
@@ -18,19 +19,19 @@ class LinksAdmin(admin.ModelAdmin):
 
 @admin.register(ShoppingList)
 class ShoppingListAdmin(admin.ModelAdmin):
-    recipes = ("user", "recipe__name", "date_added")
-    search_fields = ("user__username", "recipe__name")
+    recipes = ('user', 'recipe__name', 'date_added')
+    search_fields = ('user__username', 'recipe__name')
 
 
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ("user", "recipe_name")
-    search_fields = ("user__username", "recipe__name")
+    list_display = ('user', 'recipe_name')
+    search_fields = ('user__username', 'recipe__name')
 
     def recipe_name(self, obj):
         return obj.recipe.name
 
-    recipe_name.short_description = "Recipe Name"
+    recipe_name.short_description = 'Recipe Name'
 
 
 @admin.register(User)

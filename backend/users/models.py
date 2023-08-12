@@ -101,6 +101,7 @@ class Follow(models.Model):
                 name='unique_subscription'
             )
         ]
+        ordering = ['-author_id']
 
     def __str__(self):
         return f'{self.user} оформил подписку на {self.author}'

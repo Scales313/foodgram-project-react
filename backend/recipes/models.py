@@ -5,6 +5,9 @@ from django.db import models
 from django.utils import timezone
 from PIL import Image
 
+from foodgram.settings import MAX_VALUE, MIN_VALUE, IMAGE_THUMBNAIL_SIZE
+
+
 User = get_user_model()
 
 
@@ -13,7 +16,7 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField('Единицы измерения', max_length=255)
 
     def __str__(self):
-        return f"{self.name} {self.measurement_unit}"
+        return f'{self.name} {self.measurement_unit}'
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -46,7 +49,7 @@ class Tag(models.Model):
 
 class Recipe(models.Model):
     name = models.CharField(
-        verbose_name="Название рецепта",
+        verbose_name='Название рецепта',
         max_length=255
     )
     author = models.ForeignKey(
@@ -58,21 +61,22 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(Tag, verbose_name='Теги')
     image = models.ImageField(
-        verbose_name="Изображение блюда",
-        upload_to="recipe_images/",
+        verbose_name='Изображение блюда',
+        upload_to='recipe_images/',
     )
-    text = models.TextField(
-        verbose_name="Описание блюда",
-        max_length=10000)
+    text = models.TextField(verbose_name='Описание блюда',)
     ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
         verbose_name='Ингредиенты',
         related_name='recipes',
     )
-    cooking_time = models.PositiveIntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
-        validators=[MinValueValidator(1)]
+        validators=[
+            MinValueValidator(MIN_VALUE, 'Не меньше одного'),
+            MaxValueValidator(MIN_VALUE, 'Слишком большое время')
+        ]
     )
     pub_date = models.DateTimeField(
         'Дата публикации',
@@ -83,6 +87,7 @@ class Recipe(models.Model):
         return self.name
 
     class Meta:
+        ordering = ['name']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -91,7 +96,7 @@ class Recipe(models.Model):
 
         if self.image:
             img = Image.open(self.image.path)
-            img.thumbnail((300, 300))
+            img.thumbnail(IMAGE_THUMBNAIL_SIZE)
             img.save(self.image.path)
 
 
@@ -99,28 +104,28 @@ class RecipeIngredient(models.Model):
 
     recipe = models.ForeignKey(
         Recipe,
-        verbose_name="В каких рецептах",
-        related_name="recipe_ingredient",
+        verbose_name='В каких рецептах',
+        related_name='recipe_ingredient',
         on_delete=models.CASCADE
     )
     ingredient = models.ForeignKey(
         Ingredient,
-        verbose_name="Связанные ингредиенты",
-        related_name="recipe_ingredient",
+        verbose_name='Связанные ингредиенты',
+        related_name='recipe_ingredient',
         on_delete=models.CASCADE
     )
     amount = models.PositiveSmallIntegerField(
-        verbose_name="Количество",
+        verbose_name='Количество',
         default=0,
         validators=[
-            MinValueValidator(1, "Не меньше одного"),
-            MaxValueValidator(100, "Просто съешь это отдельно")
+            MinValueValidator(MIN_VALUE, 'Не меньше одного'),
+            MaxValueValidator(MAX_VALUE, 'Просто съешь это отдельно')
         ]
     )
 
     class Meta:
-        verbose_name = "Ингредиент рецепта"
-        verbose_name_plural = "Ингредиенты рецепта"
+        verbose_name = 'Ингредиент рецепта'
+        verbose_name_plural = 'Ингредиенты рецепта'
 
 
 class ShoppingList(models.Model):

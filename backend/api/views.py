@@ -46,8 +46,8 @@ class UserViewSet(mixins.CreateModelMixin,
             permission_classes=(IsAuthenticated,))
     def set_password(self, request):
         serializer = SetPasswordSerializer(request.user, data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({'detail': 'Пароль успешно изменен!'},
                         status=status.HTTP_204_NO_CONTENT)
 
@@ -68,12 +68,6 @@ class UserViewSet(mixins.CreateModelMixin,
             permission_classes=(AllowAny,))
     def subscribe(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs['pk'])
-
-        if request.user.id == author.id:
-            return Response(
-                {"detail": "Невозможно подписаться на самого себя."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
         if request.method == 'POST':
             Follow.objects.create(user=request.user, author=author)
@@ -130,8 +124,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
 
         if request.method == 'POST':
-            if not Favorite.objects.filter(user=request.user,
-                                           recipe=recipe).exists():
+            if not RecipeReadSerializer(
+                instance=recipe,
+                context={'request': request}
+            ).get_is_favorited(recipe):
                 Favorite.objects.create(user=request.user, recipe=recipe)
                 return Response({'detail': 'Рецепт добавлен в избранное.'},
                                 status=status.HTTP_201_CREATED)
@@ -139,7 +135,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == 'DELETE':
-            Favorite.objects.filter(user=request.user, recipe=recipe).delete()
+            request.user.favorites.filter(recipe=recipe).delete()
             return Response({'detail': 'Рецепт убран из избранного.'},
                             status=status.HTTP_204_NO_CONTENT)
 
@@ -159,16 +155,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     {'detail': 'Рецепт добавлен в корзину покупок.'},
                     status=status.HTTP_201_CREATED
                 )
-            return Response({'errors': 'Вы уже добавили этот рецепт.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'errors': 'Вы уже добавили этот рецепт.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == 'DELETE':
-            ShoppingList.objects.filter(
+            shopping_list_item = get_object_or_404(
+                ShoppingList,
                 user=request.user,
                 recipe=recipe
-            ).delete()
-            return Response({'detail': 'Рецепт удален из корзины покупок.'},
-                            status=status.HTTP_204_NO_CONTENT)
+            )
+            shopping_list_item.delete()
+            return Response(
+                {'detail': 'Рецепт удален из корзины покупок.'},
+                status=status.HTTP_204_NO_CONTENT
+            )
 
     @action(detail=False, methods=['get'],
             permission_classes=(AllowAny,))
