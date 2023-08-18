@@ -228,10 +228,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     ingredients = RecipeIngredientCreateSerializer(many=True)
     image = Base64ImageField()
-    amount = serializers.IntegerField( 
+    amount = serializers.IntegerField(
         min_value=MIN_VALUE,
         max_value=MAX_VALUE
-    )    
+    )
     cooking_time = serializers.IntegerField(
         min_value=MIN_VALUE,
         max_value=MAX_VALUE
