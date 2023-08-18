@@ -137,7 +137,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 return Response(
                     {'errors': 'Вы уже добавили этот рецепт.'},
                     status=status.HTTP_400_BAD_REQUEST
-                    )
+                )
 
         if request.method == 'DELETE':
             request.user.favorites.filter(recipe=recipe).delete()
