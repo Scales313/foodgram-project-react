@@ -122,7 +122,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-
         if request.method == 'POST':
             serializer = RecipeReadSerializer(
                 instance=recipe,
