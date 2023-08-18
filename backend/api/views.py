@@ -124,15 +124,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
 
         if request.method == 'POST':
-            if not RecipeReadSerializer(
+            serializer = RecipeReadSerializer(
                 instance=recipe,
                 context={'request': request}
-            ).get_is_favorited(recipe):
-                Favorite.objects.create(user=request.user, recipe=recipe)
-                return Response({'detail': 'Рецепт добавлен в избранное.'},
-                                status=status.HTTP_201_CREATED)
-            return Response({'errors': 'Вы уже добавили этот рецепт.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            )
+            if serializer.is_valid(raise_exception=True):
+                if not serializer.get_is_favorited(recipe):
+                    Favorite.objects.create(user=request.user, recipe=recipe)
+                    return Response(
+                        {'detail': 'Рецепт добавлен в избранное.'},
+                        status=status.HTTP_201_CREATED
+                    )
+                return Response(
+                    {'errors': 'Вы уже добавили этот рецепт.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                                )
 
         if request.method == 'DELETE':
             request.user.favorites.filter(recipe=recipe).delete()
@@ -146,19 +152,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
 
         if request.method == 'POST':
-            if not ShoppingList.objects.filter(
-                user=request.user,
-                recipe=recipe
-            ).exists():
-                ShoppingList.objects.create(user=request.user, recipe=recipe)
+            serializer = RecipeReadSerializer(
+                instance=recipe,
+                context={'request': request}
+            )
+            if serializer.is_valid(raise_exception=True):
+                serializer.add_to_shopping_cart(request.user, recipe)
                 return Response(
                     {'detail': 'Рецепт добавлен в корзину покупок.'},
                     status=status.HTTP_201_CREATED
                 )
-            return Response(
-                {'errors': 'Вы уже добавили этот рецепт.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
         if request.method == 'DELETE':
             shopping_list_item = get_object_or_404(

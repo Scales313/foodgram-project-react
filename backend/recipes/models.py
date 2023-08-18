@@ -5,7 +5,11 @@ from django.db import models
 from django.utils import timezone
 from PIL import Image
 
-from foodgram.settings import MAX_VALUE, MIN_VALUE, IMAGE_THUMBNAIL_SIZE
+from django.conf import settings
+
+MAX_VALUE = settings.MAX_VALUE
+MIN_VALUE = settings.MIN_VALUE
+IMAGE_THUMBNAIL_SIZE = settings.IMAGE_THUMBNAIL_SIZE
 
 
 User = get_user_model()
@@ -75,7 +79,7 @@ class Recipe(models.Model):
         verbose_name='Время приготовления',
         validators=[
             MinValueValidator(MIN_VALUE, 'Не меньше одного'),
-            MaxValueValidator(MIN_VALUE, 'Слишком большое время')
+            MaxValueValidator(MAX_VALUE, 'Слишком большое время')
         ]
     )
     pub_date = models.DateTimeField(

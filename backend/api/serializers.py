@@ -5,9 +5,14 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_base64.fields import Base64ImageField
 from rest_framework import serializers
 
-from recipes.models import (Ingredient, Recipe, RecipeIngredient, Tag)
+from recipes.models import (Ingredient, Recipe, RecipeIngredient,
+                            ShoppingList, Tag)
 from users.models import User
-from foodgram.settings import MAX_VALUE, MIN_VALUE
+from django.conf import settings
+
+MAX_VALUE = settings.MAX_VALUE
+MIN_VALUE = settings.MIN_VALUE
+IMAGE_THUMBNAIL_SIZE = settings.IMAGE_THUMBNAIL_SIZE
 
 
 class UserReadSerializer(UserSerializer):
@@ -79,11 +84,9 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
     )
-    amount = serializers.DecimalField(
+    amount = serializers.IntegerField(
         min_value=MIN_VALUE,
-        max_value=MAX_VALUE,
-        max_digits=10,
-        decimal_places=2
+        max_value=MAX_VALUE
     )
 
     class Meta:
@@ -199,6 +202,17 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         if request.user.is_authenticated:
             return obj.shopping_lists.filter(user=request.user).exists()
         return False
+
+    def add_to_shopping_cart(self, user, recipe):
+        if not ShoppingList.objects.filter(
+            user=user,
+            recipe=recipe
+        ).exists():
+            ShoppingList.objects.create(user=user, recipe=recipe)
+        else:
+            raise serializers.ValidationError(
+                {'errors': 'Вы уже добавили этот рецепт.'}
+            )
 
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
