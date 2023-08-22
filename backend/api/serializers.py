@@ -213,6 +213,10 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
+    amount = serializers.IntegerField(
+        min_value=MIN_VALUE,
+        max_value=MAX_VALUE
+    )
 
     class Meta:
         model = RecipeIngredient
@@ -228,10 +232,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     ingredients = RecipeIngredientCreateSerializer(many=True)
     image = Base64ImageField()
-    amount = serializers.IntegerField(
-        min_value=MIN_VALUE,
-        max_value=MAX_VALUE
-    )
     cooking_time = serializers.IntegerField(
         min_value=MIN_VALUE,
         max_value=MAX_VALUE
@@ -249,6 +249,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f'{field} - Обязательное поле.'
                 )
+        name = obj.get('name')
+        if Recipe.objects.filter(name=name).exists():
+            raise serializers.ValidationError(
+                'Рецепт с таким названием уже существует.',
+                code='duplicate_name'
+            )
 
         if not obj.get('tags'):
             raise serializers.ValidationError('Минимум 1 тег.')
