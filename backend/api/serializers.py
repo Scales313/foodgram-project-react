@@ -84,10 +84,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
     )
-    amount = serializers.IntegerField(
-        min_value=MIN_VALUE,
-        max_value=MAX_VALUE
-    )
 
     class Meta:
         model = RecipeIngredient
@@ -139,7 +135,7 @@ class FollowsSerializer(serializers.ModelSerializer):
 
         if request.user == author:
             raise serializers.ValidationError(
-                "Невозможно подписаться на самого себя."
+                'Невозможно подписаться на самого себя.'
             )
 
         return data
@@ -200,10 +196,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return False
 
     def add_to_shopping_cart(self, user, recipe):
-        if not ShoppingList.objects.filter(
-            user=user,
-            recipe=recipe
-        ).exists():
+        if not user.shopping_cart.filter(recipe=recipe).exists():
             ShoppingList.objects.create(user=user, recipe=recipe)
         else:
             raise serializers.ValidationError(
@@ -221,6 +214,20 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'amount')
+
+    def validate_amount(self, value):
+        try:
+            amount = int(value)
+            if MIN_VALUE <= amount <= MAX_VALUE:
+                return amount
+            else:
+                raise serializers.ValidationError(
+                    'Недопустимое значение для количества.'
+                )
+        except ValueError:
+            raise serializers.ValidationError(
+                'Количество должно быть числовым значением.'
+            )
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -249,8 +256,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f'{field} - Обязательное поле.'
                 )
-        name = obj.get('name')
-        if Recipe.objects.filter(name=name).exists():
+        if obj.recipes_with_name.exists():
             raise serializers.ValidationError(
                 'Рецепт с таким названием уже существует.',
                 code='duplicate_name'
@@ -301,7 +307,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags', [])
         ingredients = validated_data.pop('ingredients', [])
         instance.tags.clear()
-        RecipeIngredient.objects.filter(recipe=instance).delete()
+        instance.recipe_ingredient.all().delete()
         self.tags_and_ingredients_set(instance, tags, ingredients)
         return super().update(instance, validated_data)
 
