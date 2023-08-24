@@ -220,10 +220,9 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
             amount = int(value)
             if MIN_VALUE <= amount <= MAX_VALUE:
                 return amount
-            else:
-                raise serializers.ValidationError(
-                    'Недопустимое значение для количества.'
-                )
+            raise serializers.ValidationError(
+                'Недопустимое значение для количества.'
+            )
         except ValueError:
             raise serializers.ValidationError(
                 'Количество должно быть числовым значением.'

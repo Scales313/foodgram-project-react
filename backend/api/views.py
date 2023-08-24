@@ -122,22 +122,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
+
+        serializer = RecipeReadSerializer(
+            instance=recipe,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
         if request.method == 'POST':
-            serializer = RecipeReadSerializer(
-                instance=recipe,
-                context={'request': request}
-            )
-            if serializer.is_valid(raise_exception=True):
-                if not serializer.get_is_favorited(recipe):
-                    Favorite.objects.create(user=request.user, recipe=recipe)
-                    return Response(
-                        {'detail': 'Рецепт добавлен в избранное.'},
-                        status=status.HTTP_201_CREATED
-                    )
+            if not serializer.get_is_favorited(recipe):
+                Favorite.objects.create(user=request.user, recipe=recipe)
                 return Response(
-                    {'errors': 'Вы уже добавили этот рецепт.'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {'detail': 'Рецепт добавлен в избранное.'},
+                    status=status.HTTP_201_CREATED
                 )
+            return Response(
+                {'errors': 'Вы уже добавили этот рецепт.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == 'DELETE':
             request.user.favorites.filter(recipe=recipe).delete()
